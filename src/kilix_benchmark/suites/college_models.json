@@ -1,0 +1,36 @@
+{
+  "schema": "kilix.benchmark.models/v1",
+  "engine": {
+    "tag": "b10174",
+    "builds": [
+      {
+        "id": "vulkan",
+        "file": "llama-b10174-bin-ubuntu-vulkan-x64.tar.gz",
+        "sha256": "61ec8c56d3c528d0c156c1ee521241b68f60e6fd3e67e24cf43d810ef4bd328b",
+        "bytes": 32410715
+      },
+      {
+        "id": "cpu",
+        "file": "llama-b10174-bin-ubuntu-x64.tar.gz",
+        "sha256": "46139c9f283ff230dbafc8f11bdbfdd0b58b83e24e0d680ed895df283d7c2f88",
+        "bytes": 16436163
+      }
+    ]
+  },
+  "models": [
+    {
+      "id": "bonsai-8b",
+      "file": "Bonsai-8B-Q1_0.gguf",
+      "url": "https://huggingface.co/prism-ml/Bonsai-8B-gguf/resolve/48516770dd04643643e9f9019a2a349cf26c5dbd/Bonsai-8B-Q1_0.gguf",
+      "sha256": "284a335aa3fb2ced3b1b01fcb40b08aa783e3b70832767f0dd2e3fdfa134bd54",
+      "bytes": 1158654496
+    },
+    {
+      "id": "qwen3:0.6b",
+      "file": "qwen3-0.6b.gguf",
+      "url": "https://registry.ollama.ai/v2/library/qwen3/blobs/sha256:7f4030143c1c477224c5434f8272c662a8b042079a0a584f0a27a1684fe2e1fa",
+      "sha256": "7f4030143c1c477224c5434f8272c662a8b042079a0a584f0a27a1684fe2e1fa",
+      "bytes": 522640096
+    }
+  ]
+}
