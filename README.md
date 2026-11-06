@@ -21,3 +21,14 @@ that file. It is not a score by itself.
 python -m kilix_benchmark.mcq --suite src/kilix_benchmark/suites/college_mcq.json \
   --model name --results results.json
 ```
+
+`python -m kilix_benchmark.codex_exec` asks `codex exec` for each item and
+writes a reference file. The prompt is the suite prompt. stdin is closed, the
+sandbox is read-only, and the last message is the recorded reply.
+
+```sh
+python -m kilix_benchmark.codex_exec \
+  --suite src/kilix_benchmark/suites/college_mcq.json \
+  --model gpt-6-luna --effort high \
+  --output src/kilix_benchmark/references/college_mcq/gpt-6-luna-high.json
+```

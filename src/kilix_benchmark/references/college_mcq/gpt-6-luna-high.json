@@ -1,0 +1,156 @@
+{
+  "schema": "kilix.benchmark.reference/v1",
+  "suite": "college-mcq",
+  "model": "gpt-6-luna",
+  "effort": "high",
+  "items": [
+    {
+      "id": "calc-derivative",
+      "completion": "{\"choice\":\"C\"}",
+      "seconds": 5.409,
+      "error": ""
+    },
+    {
+      "id": "calc-integral",
+      "completion": "{\"choice\":\"B\"}",
+      "seconds": 4.022,
+      "error": ""
+    },
+    {
+      "id": "calc-limit",
+      "completion": "{\"choice\":\"B\"}",
+      "seconds": 3.724,
+      "error": ""
+    },
+    {
+      "id": "phys-distance",
+      "completion": "{\"choice\":\"C\"}",
+      "seconds": 4.241,
+      "error": ""
+    },
+    {
+      "id": "phys-kinetic",
+      "completion": "{\"choice\":\"B\"}",
+      "seconds": 4.03,
+      "error": ""
+    },
+    {
+      "id": "phys-newton",
+      "completion": "{\"choice\":\"A\"}",
+      "seconds": 3.072,
+      "error": ""
+    },
+    {
+      "id": "chem-water",
+      "completion": "{\"choice\":\"B\"}",
+      "seconds": 3.148,
+      "error": ""
+    },
+    {
+      "id": "chem-nacl",
+      "completion": "{\"choice\":\"A\"}",
+      "seconds": 3.423,
+      "error": ""
+    },
+    {
+      "id": "chem-ph",
+      "completion": "{\"choice\":\"C\"}",
+      "seconds": 3.293,
+      "error": ""
+    },
+    {
+      "id": "bio-mito",
+      "completion": "{\"choice\":\"C\"}",
+      "seconds": 3.793,
+      "error": ""
+    },
+    {
+      "id": "bio-base",
+      "completion": "{\"choice\":\"C\"}",
+      "seconds": 3.582,
+      "error": ""
+    },
+    {
+      "id": "bio-photo",
+      "completion": "{\"choice\":\"B\"}",
+      "seconds": 4.316,
+      "error": ""
+    },
+    {
+      "id": "stat-mean",
+      "completion": "{\"choice\":\"A\"}",
+      "seconds": 3.905,
+      "error": ""
+    },
+    {
+      "id": "stat-coins",
+      "completion": "{\"choice\":\"C\"}",
+      "seconds": 3.28,
+      "error": ""
+    },
+    {
+      "id": "stat-median",
+      "completion": "{\"choice\":\"B\"}",
+      "seconds": 3.601,
+      "error": ""
+    },
+    {
+      "id": "econ-opportunity",
+      "completion": "{\"choice\":\"B\"}",
+      "seconds": 4.492,
+      "error": ""
+    },
+    {
+      "id": "econ-ceiling",
+      "completion": "{\"choice\":\"B\"}",
+      "seconds": 4.041,
+      "error": ""
+    },
+    {
+      "id": "econ-advantage",
+      "completion": "{\"choice\":\"B\"}",
+      "seconds": 5.614,
+      "error": ""
+    },
+    {
+      "id": "logic-ponens",
+      "completion": "{\"choice\":\"A\"}",
+      "seconds": 5.179,
+      "error": ""
+    },
+    {
+      "id": "logic-chain",
+      "completion": "{\"choice\":\"B\"}",
+      "seconds": 3.849,
+      "error": ""
+    },
+    {
+      "id": "cs-binary",
+      "completion": "{\"choice\":\"B\"}",
+      "seconds": 4.438,
+      "error": ""
+    },
+    {
+      "id": "cs-stack",
+      "completion": "{\"choice\":\"B\"}",
+      "seconds": 3.742,
+      "error": ""
+    },
+    {
+      "id": "lin-det",
+      "completion": "{\"choice\":\"B\"}",
+      "seconds": 3.689,
+      "error": ""
+    },
+    {
+      "id": "cs-tree",
+      "completion": "{\"choice\":\"B\"}",
+      "seconds": 3.613,
+      "error": ""
+    }
+  ],
+  "score": {
+    "correct": 24,
+    "count": 24
+  }
+}
