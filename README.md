@@ -87,3 +87,19 @@ difference is at least 5% of the reference median.
 
 The numbers are application-side. They do not include the terminal drawing
 the tab, which measured runs never show, or photon latency.
+
+`src/kilix_benchmark/references/kilix95_tab/` holds recorded comparisons.
+`2026-11-12.json` is the regular Kilix 95 against the build that draws its
+text with Neuronte: one warm-up run per arm and 10 pairs on one laptop. It
+keeps the commits, the host description, every run's checks and metrics and
+the paired comparison, and no paths. A new record is written with
+
+```sh
+PYTHONPATH=src python -m kilix_benchmark.tab_stats --out results/ \
+  --reference regular --candidate neuronte \
+  --campaign results/campaign-01.json --host host.json \
+  --public src/kilix_benchmark/references/kilix95_tab/DATE.json
+```
+
+where `host.json` describes the machine in words; `--public` refuses any
+string that looks like a local path.

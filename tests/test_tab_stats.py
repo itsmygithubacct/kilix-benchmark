@@ -163,5 +163,58 @@ class CampaignTests(unittest.TestCase):
         self.assertIn("| 01-r | r | yes |", text)
 
 
+class PublicReferenceTests(unittest.TestCase):
+    def test_paths_are_refused_and_commits_kept(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            write_run(root, "01-r", "r", 1, warmup=True)
+            write_run(root, "02-n", "n", 2, warmup=True)
+            write_run(root, "03-r", "r", 3)
+            write_run(root, "04-n", "n", 4)
+            analysis = S.analyze(root, "r", "n")
+        plan = {"suite": "kilix95-tab", "arms": {"r": {"path": "/tmp/x/r", "commit": "aa",
+                                                       "dirty_paths": 0}},
+                "harness": {"path": "/tmp/x/h", "commit": "bb", "dirty_paths": 0}}
+        record = S.public_reference(analysis, plan, {"cpus": 12})
+        self.assertEqual(record["arms"]["r"], {"commit": "aa", "dirty_paths": 0})
+        self.assertNotIn("/tmp/", json.dumps(record))
+        self.assertEqual([r["run"] for r in record["runs"]], ["01-r", "02-n", "03-r", "04-n"])
+        with self.assertRaises(ValueError):
+            S.public_reference(analysis, plan, {"where": "/tmp/x"})
+        self.assertEqual(record["runs"][2]["values"]["type-paced.latency_written_ms.median"], 10.0)
+
+
+REFERENCES = Path(S.__file__).resolve().parent / "references" / "kilix95_tab"
+
+
+class RecordedReferenceTests(unittest.TestCase):
+    """Every committed reference: no paths, and its verdicts follow from its own runs."""
+
+    def test_recorded_verdicts_recompute(self) -> None:
+        files = sorted(REFERENCES.glob("*.json"))
+        self.assertTrue(files)
+        for path in files:
+            text = path.read_text()
+            for marker in ("/home/", "/tmp/", "/root/"):
+                self.assertNotIn(marker, text, path.name)
+            record = json.loads(text)
+            self.assertEqual(record["schema"], "kilix.benchmark.tab-reference/v1")
+            runs = sorted((r for r in record["runs"] if not r["warmup"]), key=lambda r: r["index"])
+            ref, cand = record["reference_arm"], record["candidate_arm"]
+            pairs = []
+            for a, b in zip(runs[0::2], runs[1::2]):
+                arms = {a["arm"]: a, b["arm"]: b}
+                if set(arms) == {ref, cand} and a["valid"] and b["valid"]:
+                    pairs.append((arms[ref], arms[cand]))
+            self.assertEqual(len(pairs), record["pairs"], path.name)
+            for key, stored in record["comparison"].items():
+                again = S.compare([p[0]["values"][key] for p in pairs],
+                                  [p[1]["values"][key] for p in pairs])
+                self.assertEqual(again["verdict"], stored["verdict"], f"{path.name} {key}")
+                if stored["verdict"] != "no data":
+                    self.assertAlmostEqual(again["median_difference"],
+                                           stored["median_difference"], places=9)
+
+
 if __name__ == "__main__":
     unittest.main()

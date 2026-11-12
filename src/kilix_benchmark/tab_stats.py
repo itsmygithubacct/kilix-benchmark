@@ -458,13 +458,59 @@ def summary_markdown(analysis: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def public_reference(analysis: dict, plan: dict, host: dict) -> dict:
+    """A record with no local paths: commits, host kind, verdicts, spreads."""
+    def commit(entry):
+        return {"commit": (entry or {}).get("commit"),
+                "dirty_paths": (entry or {}).get("dirty_paths")}
+    record = {
+        "schema": "kilix.benchmark.tab-reference/v1",
+        "suite": plan.get("suite"),
+        "started_utc": plan.get("started_utc"),
+        "arms": {name: commit(entry) for name, entry in (plan.get("arms") or {}).items()},
+        "neuronte": commit(plan.get("neuronte_home")),
+        "neuronte_library_sha256": plan.get("neuronte_library_sha256"),
+        "harness": commit(plan.get("harness")),
+        "host": host,
+        "reference_arm": analysis["reference"],
+        "candidate_arm": analysis["candidate"],
+        "pairs": analysis["pairs"],
+        "problems": analysis["problems"],
+        "runs": [{"run": r["run"], "arm": r["arm"], "index": r["index"], "warmup": r["warmup"],
+                  "valid": r["valid"],
+                  "failed_checks": [k for k, v in r["checks"].items() if not v],
+                  "load1_before": (r["host"]["host_before"].get("loadavg") or [None])[0],
+                  "values": {key: lookup(r, key) for key in analysis["comparison"]}}
+                 for r in analysis["runs"]],
+        "comparison": analysis["comparison"],
+        "per_arm": analysis["per_arm"],
+    }
+    text = json.dumps(record)
+    for marker in ("/home/", "/tmp/", "/root/", os.path.expanduser("~")):
+        if marker and marker != "~" and marker in text:
+            raise ValueError(f"reference would contain a local path ({marker})")
+    return record
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Analyze tab-bench runs")
     parser.add_argument("--out", required=True, type=Path, help="campaign directory (has runs/)")
     parser.add_argument("--reference", required=True)
     parser.add_argument("--candidate", required=True)
+    parser.add_argument("--campaign", type=Path,
+                        help="campaign-NN.json to name commits in a public reference")
+    parser.add_argument("--host", type=Path, help="JSON describing the host kind, no names")
+    parser.add_argument("--public", type=Path, help="write a path-free reference here")
     args = parser.parse_args(argv)
     analysis = analyze(args.out, args.reference, args.candidate)
+    if args.public:
+        if not args.campaign:
+            parser.error("--public needs --campaign")
+        plan = json.loads(args.campaign.read_text(encoding="utf-8"))
+        host = json.loads(args.host.read_text(encoding="utf-8")) if args.host else {}
+        record = public_reference(analysis, plan, host)
+        args.public.parent.mkdir(parents=True, exist_ok=True)
+        args.public.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
     (args.out / "analysis.json").write_text(json.dumps(analysis, indent=2), encoding="utf-8")
     (args.out / "SUMMARY.md").write_text(summary_markdown(analysis), encoding="utf-8")
     print(summary_markdown(analysis))
