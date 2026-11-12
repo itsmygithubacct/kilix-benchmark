@@ -1,0 +1,103 @@
+{
+  "schema": "kilix.benchmark.tab/v1",
+  "id": "kilix95-tab",
+  "description": "One scripted Kilix 95 session in a Kilix tab: Start menu, Notepad typing, caret, pointer and window drag. Keys and pointer reports are written to the tab through remote-control send-text, encoded as the terminal would encode them.",
+  "settle_ms": 8000,
+  "exit_timeout_ms": 20000,
+  "ready_timeout_ms": 60000,
+  "env": {
+    "KILIX_NO_SOUND": "1",
+    "KILIX_HOST_CLIP": "0",
+    "KILIX_MODEL_WIZARD_OFFER": "0",
+    "KILIX_SYSTEM_VOICE_OFFER": "0",
+    "KILIX_SAVER_IDLE": "86400",
+    "KILIX_STARTUP_SCREEN_SECONDS": "1.2",
+    "KILIX_SHUTDOWN_SCREEN_SECONDS": "1.0"
+  },
+  "env_unset": [
+    "DBUS_SESSION_BUS_ADDRESS",
+    "DISPLAY",
+    "XAUTHORITY",
+    "WAYLAND_DISPLAY",
+    "KITTY_LISTEN_ON",
+    "KITTY_PUBLIC_KEY",
+    "KILIX_RC_PASSWORD_FILE",
+    "KILIX_RC_CONFIG_FILE",
+    "KILIX_STREAM",
+    "TMUX",
+    "KILIX_DESKTOP_SUPERVISED",
+    "KILIX_DESKTOP_RESTARTED",
+    "PLEB_DESKTOP_DISPLAY",
+    "PLEB_DESKTOP_XAUTHORITY",
+    "KILIX_GUI_ROUTE_BIN"
+  ],
+  "seed_files": [
+    "budget 2026.txt", "letter to grandma.txt", "notes.txt", "todo list.txt",
+    "recipes.txt", "meeting minutes.txt", "readme first.txt", "garden plan.txt",
+    "reading list.txt", "trip itinerary.txt", "song lyrics.txt", "phone numbers.txt"
+  ],
+  "phases": [
+    {
+      "id": "menu",
+      "steps": [
+        {"keys": ["ctrl+escape", "down", "right", "right",
+                  "down", "down", "down", "down", "down", "down", "down",
+                  "up", "up", "up", "up", "up", "up", "up",
+                  "escape", "escape", "escape"],
+         "interval_ms": 150, "repeat": 2},
+        {"wait_ms": 1000}
+      ]
+    },
+    {
+      "id": "open-notepad",
+      "steps": [
+        {"keys": ["ctrl+escape", "down", "right", "right", "down", "down", "down", "enter"],
+         "interval_ms": 150},
+        {"wait_ms": 2000}
+      ]
+    },
+    {
+      "id": "type-paced",
+      "steps": [
+        {"text": "The quick brown fox jumps over the lazy dog.\nKilix 95 draws text: 0123456789 (A-Z & a-z)!\n",
+         "interval_ms": 120},
+        {"wait_ms": 1500}
+      ]
+    },
+    {
+      "id": "type-burst",
+      "steps": [
+        {"burst": "Pack my box with five dozen liquor jugs. Pack my box with five dozen liquor jugs. Pack my box with five dozen liquor jugs. Pack my box with five dozen liquor jugs. Pack my box with five dozen liquor jugs. Pack my box with five dozen liquor jugs. Pack my box with five dozen liquor jugs. Pack my box with five dozen liquor jugs. Pack my box with five dozen liquor jugs. Pack my box with five dozen liquor jugs. ",
+         "chunk": 10},
+        {"wait_ms": 3000}
+      ]
+    },
+    {
+      "id": "caret",
+      "steps": [
+        {"keys": ["left"], "interval_ms": 60, "repeat": 40},
+        {"wait_ms": 1000}
+      ]
+    },
+    {
+      "id": "hover",
+      "steps": [
+        {"hover": {"from": [0.15, 0.80], "to": [0.85, 0.40], "count": 120, "interval_ms": 16}},
+        {"wait_ms": 1000}
+      ]
+    },
+    {
+      "id": "drag",
+      "steps": [
+        {"drag": {"window": "Notepad", "grip": [60, 10], "step": [4, 2], "count": 60, "interval_ms": 16}},
+        {"wait_ms": 1500}
+      ]
+    },
+    {
+      "id": "quit",
+      "steps": [
+        {"keys": ["ctrl+alt+q"], "interval_ms": 0}
+      ]
+    }
+  ]
+}

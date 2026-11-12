@@ -1,7 +1,7 @@
 [project]
 name = "kilix-benchmark"
 version = "0.1.0"
-description = "JSON benchmark suites for local language models"
+description = "Benchmark suites for local language models and Kilix desktops"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 dependencies = []
