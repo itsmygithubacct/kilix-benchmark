@@ -107,6 +107,50 @@ string that looks like a local path.
 
 ## video side by side
 
+For a fixed-resolution comparison with FFmpeg, distribution mpv and optional
+ffplay, use `kilix_benchmark.video_compare`. It reuses the process-tree sampler,
+host inventory, cadence analysis and paired statistics in this package.
+
+```sh
+PYTHONPATH=src python -m kilix_benchmark.video_compare \
+  --video tagged-clip.mp4 --start 20 --frames 240 --runs 6 --size 945x531 \
+  --out comparison/ --arm ffmpeg:ffmpeg:/usr/bin/ffmpeg \
+  --option=ffmpeg:-filter_threads --option=ffmpeg:1 \
+  --arm stock:mpv:/usr/bin/mpv --arm kilix:mpv:/path/to/kilix-mpv \
+  --arm neuronte:neuronte:/path/to/neuronte
+```
+
+Each arm gets one warm-up, then six runs with rotating order. Use a constant
+frame-rate clip whose color metadata is known; missing metadata can make the
+players choose different color matrices or chroma locations. The campaign
+records source/tool hashes, revisions, exact commands and color metadata.
+Known source chroma locations are passed explicitly to FFmpeg's scaler.
+Both mpv versions use their Kitty renderer with the same Lanczos options;
+Neuronte requires `--pixel-size` and `--untimed` support. The consumer checks
+every transmitted RGB frame's dimensions and byte count, rejects terminal
+stretching, and reads/unlinks only the player's published shared-memory names.
+Upstream mpv's final duplicate redraw is counted separately. Sampled frames
+are compared with FFmpeg, and full-frame hashes are recorded for every frame.
+
+Reports include child CPU per source frame, first frame, throughput, process
+memory/cadence observations and paired confidence/sign tests. **Throughput is
+through a private RGB consumer, not physical display FPS.** FFmpeg has no
+presenter and represents decode/scale/pipe cost. Consumer CPU is recorded
+separately; raw samples are saved only during warm-up. Failed runs remain in
+the record and cannot shift the pairing of later successful runs.
+
+Use `--mode realtime` to retain playback timing. That mode also accepts
+`--arm ffplay:ffplay:/usr/bin/ffplay`: ffplay uses SDL dummy/software rendering
+and reports filtered frames, not physical presentation. Its renderer and
+diagnostic logging differ from the terminal arms, so treat it as a separate
+software-display reference. This command never opens desktop windows or
+changes live terminal settings. The live-terminal driver below remains the
+check for actual terminal consumption, audio clocks and seeks.
+For ffplay comparisons, use `--start 0` and the same clip cut at a keyframe
+for every arm. ffplay otherwise retains seek pre-roll, charging extra frames
+to its CPU result. The report records all filtered frames as well as those
+within the requested interval.
+
 `python -m kilix_benchmark.video_bench` plays one file with kilix-mpv
 (`--vo=kitty`, pictures through shared memory, the line the Kilix launcher
 uses) and with the Neuronte player (`tools/neuronte-play.py` in a Neuronte
