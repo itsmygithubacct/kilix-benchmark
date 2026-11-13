@@ -60,6 +60,19 @@ class CaptureTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "truncated"):
                 raw.finish()
 
+    def test_missing_shm_is_fatal_until_the_requested_interval_is_complete(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = Graphics((1, 1), tmp, shm_root=tmp, prefixes=("owned-",), expected_frames=1)
+            missing = packet(b"a=T,f=24,s=1,v=1,t=s", base64.b64encode(b"owned-missing"))
+            with self.assertRaises(FileNotFoundError):
+                sink.feed(missing)
+            sink = Graphics((1, 1), tmp, shm_root=tmp, prefixes=("owned-",), expected_frames=1)
+            sink.feed(packet(b"a=T,f=24,s=1,v=1", base64.b64encode(bytes(3))))
+            sink.feed(missing)
+            sink.finish()
+            self.assertEqual(len(sink.times), 1)
+            self.assertEqual(sink.unread_after_requested_frames, 1)
+
     def test_quality_uses_every_channel(self):
         self.assertTrue(quality(b"\x00\x7f\xff", b"\x00\x7f\xff")["exact"])
         q = quality(bytes(6), b"\x00\x00\x00\x00\x00\x06")

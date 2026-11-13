@@ -56,7 +56,7 @@ class Frames:
 
 class Graphics(Frames):
     """A terminal-protocol consumer, including the older mpv packet framing."""
-    def __init__(self, size, directory, samples=(), shm_root="/dev/shm", prefixes=()):
+    def __init__(self, size, directory, samples=(), shm_root="/dev/shm", prefixes=(), expected_frames=None):
         super().__init__(size, directory, samples)
         self.shm_root, self.prefixes = Path(shm_root), tuple(prefixes)
         self.pending = bytearray()
@@ -64,6 +64,8 @@ class Graphics(Frames):
         self.header = None
         self.trailing_nuls = 0
         self.global_deletes = 0
+        self.expected_frames = expected_frames
+        self.unread_after_requested_frames = 0
 
     def feed(self, chunk):
         self.pending.extend(chunk)
@@ -111,8 +113,17 @@ class Graphics(Frames):
                     raise ValueError("unowned shared-memory name")
                 path = self.shm_root / name
                 try:
-                    raw = path.read_bytes()
-                    self.frame(raw, (int(header[b"s"]), int(header[b"v"])))
+                    try:
+                        raw = path.read_bytes()
+                    except FileNotFoundError:
+                        if self.expected_frames is None or len(self.times) < self.expected_frames:
+                            raise
+                        # Some players reclaim an exit-time redraw before it
+                        # can be read. Keep that defect visible, separately
+                        # from an already complete requested frame interval.
+                        self.unread_after_requested_frames += 1
+                    else:
+                        self.frame(raw, (int(header[b"s"]), int(header[b"v"])))
                 finally:
                     path.unlink(missing_ok=True)  # acknowledge only this published name
             else:
@@ -212,7 +223,7 @@ def run(arm, args, directory, clip, warmup):
                 os.close(slave); slave = None
                 capture = Graphics(args.size, directory, samples,
                                    prefixes=(f"kilix-mpv-{process.pid}-", f"neuronte-play-{process.pid}-",
-                                             "mpv-kitty-0x"))
+                                             "mpv-kitty-0x"), expected_frames=args.frames)
                 fd = master
             elif arm["kind"] == "ffmpeg":
                 process = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
@@ -308,7 +319,8 @@ def run(arm, args, directory, clip, warmup):
         result["hashes"] = capture.hashes
         result["sample_indices"] = samples
         if isinstance(capture, Graphics):
-            result.update(trailing_nuls=capture.trailing_nuls, global_deletes=capture.global_deletes)
+            result.update(trailing_nuls=capture.trailing_nuls, global_deletes=capture.global_deletes,
+                          unread_after_requested_frames=capture.unread_after_requested_frames)
     else:
         result["filtered_frames"] = filtered
         result["filtered_total"] = filtered_total
@@ -338,6 +350,8 @@ def report(out, results, arms):
                                 for key in ("child_cpu_seconds", "cpu_ms_per_source_frame",
                                             "throughput_fps", "first_frame_ms")}
         summary[arm["name"]]["successful_runs"] = len(rows)
+        summary[arm["name"]]["unread_after_requested_frames"] = sum(
+            r.get("unread_after_requested_frames", 0) for r in rows)
     # Compare by repetition; never drop failed runs and silently shift pairing.
     comparisons = {}
     for reference in arms:
@@ -368,12 +382,12 @@ def report(out, results, arms):
     lines = ["# Equal-resolution video comparison", "",
              "Private RGB consumers; not physical display FPS. FFmpeg omits presentation. "
              "ffplay uses SDL dummy/software rendering and counts filtered frames, not displayed frames.",
-             "", "| Arm | Valid measured runs | CPU ms/source frame | Consumer FPS | First frame ms |",
-             "|---|---:|---:|---:|---:|"]
+             "", "| Arm | Valid measured runs | CPU ms/source frame | Consumer FPS | First frame ms | Unread post-interval redraws |",
+             "|---|---:|---:|---:|---:|---:|"]
     for name, row in summary.items():
         fmt = lambda key: f"{row[key]:.2f}" if row[key] is not None else "—"
         lines.append(f"| {name} | {row['successful_runs']} | {fmt('cpu_ms_per_source_frame')} | "
-                     f"{fmt('throughput_fps')} | {fmt('first_frame_ms')} |")
+                     f"{fmt('throughput_fps')} | {fmt('first_frame_ms')} | {row['unread_after_requested_frames']} |")
     lines += ["", "Exact commands, versions, hashes, host conditions, per-run logs, paired CPU "
               "statistics and sampled RGB quality are in the adjacent JSON files."]
     (out / "REPORT.md").write_text("\n".join(lines) + "\n")

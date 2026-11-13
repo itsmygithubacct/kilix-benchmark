@@ -131,6 +131,9 @@ every transmitted RGB frame's dimensions and byte count, rejects terminal
 stretching, and reads/unlinks only the player's published shared-memory names.
 Upstream mpv's final duplicate redraw is counted separately. Sampled frames
 are compared with FFmpeg, and full-frame hashes are recorded for every frame.
+Missing shared memory fails a run until every requested frame has arrived.
+Unread redraws after that interval are reported separately, including when
+an older player reclaims their names during exit.
 
 Reports include child CPU per source frame, first frame, throughput, process
 memory/cadence observations and paired confidence/sign tests. **Throughput is
