@@ -174,7 +174,8 @@ def command(arm, args, directory, fps):
     if kind == "ffplay":
         return [path, "-hide_banner", "-loglevel", "info", "-autoexit", "-an",
                 "-noframedrop", "-ss", str(args.start), "-t", str(args.frames / fps),
-                "-x", str(w), "-y", str(h), "-vf", scale + ",format=rgb24,showinfo", *extra, args.video]
+                "-x", str(w), "-y", str(h), "-vf",
+                f"trim=end_frame={args.frames}," + scale + ",format=rgb24,showinfo", *extra, args.video]
     raise ValueError(kind)
 
 
