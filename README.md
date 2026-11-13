@@ -125,6 +125,10 @@ frame-rate clip whose color metadata is known; missing metadata can make the
 players choose different color matrices or chroma locations. The campaign
 records source/tool hashes, revisions, exact commands and color metadata.
 Known source chroma locations are passed explicitly to FFmpeg's scaler.
+The mpv filters trim at the requested end timestamp so `--frames` cannot
+present an additional source frame during shutdown. Keep complete GOPs beyond
+the measured interval: cutting compressed packets at an arbitrary frame count
+can leave a missing presentation timestamp at the end of a remuxed clip.
 Both mpv versions use their Kitty renderer with the same Lanczos options;
 Neuronte requires `--pixel-size` and `--untimed` support. The consumer checks
 every transmitted RGB frame's dimensions and byte count, rejects terminal

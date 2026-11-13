@@ -174,6 +174,7 @@ def command(arm, args, directory, fps):
                 f"--vo-kitty-height={h}", "--keepaspect=no", "--sws-scaler=lanczos",
                 "--sws-allow-zimg=no", "--sws-fast=no", "--osd-level=0", "--osc=no",
                 "--really-quiet", "--framedrop=no", f"--start={args.start}",
+                f"--vf=lavfi=[trim=end={args.start + args.frames / fps:.9f}]",
                 f"--frames={args.frames}", *(["--untimed"] if args.mode == "throughput" else []),
                 *extra, args.video]
     if kind == "neuronte":
