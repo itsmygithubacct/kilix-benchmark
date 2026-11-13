@@ -1,8 +1,9 @@
 # kilix-benchmark
 
-JSON suites for local language models, and a scripted Kilix 95 session run
-in Kilix tabs. A suite names the work and the required shape of the answer.
-It does not know which machine runs it.
+JSON suites for local language models, a scripted Kilix 95 session run in
+Kilix tabs, and one video played by two terminal players side by side. A
+suite names the work and the required shape of the answer. It does not know
+which machine runs it.
 
 ## college-mcq
 
@@ -103,3 +104,64 @@ PYTHONPATH=src python -m kilix_benchmark.tab_stats --out results/ \
 
 where `host.json` describes the machine in words; `--public` refuses any
 string that looks like a local path.
+
+## video side by side
+
+`python -m kilix_benchmark.video_bench` plays one file with kilix-mpv
+(`--vo=kitty`, pictures through shared memory, the line the Kilix launcher
+uses) and with the Neuronte player (`tools/neuronte-play.py` in a Neuronte
+checkout). Its purpose is to show where each player spends its time, so that
+the source of either can be improved; it is not a quality comparison.
+
+Every run opens its own tab without taking focus and splits it into two
+panes of equal size. A solo run plays the file in one pane while the other
+idles. A together run plays it in both. Each kind starts with a warm-up run;
+order and sides then alternate. A player is measured from the moment the
+terminal takes its first picture until `--seconds` later, when its quit key
+is written to its pane.
+
+```sh
+PYTHONPATH=src python -m kilix_benchmark.video_bench \
+  --video clip.mp4 --start 20 --seconds 20 --pairs 3 \
+  --seek 8:right --seek 14:left \
+  --neuronte-home /path/to/neuronte --kitten /path/to/kitten --out results/
+PYTHONPATH=src python -m kilix_benchmark.video_stats results/
+```
+
+`--kitten` is the running terminal's own `kitten`. `--seek SECONDS:KEY`
+writes an arrow key to each player that many seconds into its run; both
+players seek 5 s on left and right. `--mpv-option` and `--neuronte-option`
+pass one extra argument to a player, which is how a suspected fix is tried
+against the same measurements.
+
+What a run records, all on the host's monotonic clock:
+
+- each picture a player hands the terminal: when its shared-memory object
+  was created, when the player closed it, when the terminal unlinked it (the
+  terminal unlinks a picture once it has read it), and its size;
+- CPU and memory of each player's whole process tree by program, of
+  kilix-mpv's threads by name, and of the terminal by thread, with the bytes
+  the terminal passed to write calls;
+- kilix-mpv's position, dropped and delayed frame counts and A/V difference,
+  and its seek and restart events, over its IPC socket;
+- the Neuronte player's own line per source frame: reading, fitting,
+  drawing, packing and writing times, how far the picture was behind the
+  sound, and frames it dropped or skipped;
+- when each seek key was written, and when the first picture from the new
+  place reached the terminal;
+- load, battery and GPU state before and after.
+
+`video_stats` writes `metrics.json` and `REPORT.md`: one table per kind of
+run with the median over measured runs and the range, then each player's CPU
+by program and thread and its own counters.
+
+Sound goes to a null output in both players, so both keep time by an audio
+clock and nothing is heard.
+
+Measured runs are never shown, so the numbers stop where the terminal has
+read a picture. They do not include the terminal drawing it. `--watch N`
+adds runs that are brought to the front and captured with `scrot` about five
+times a second; a capture in which the middle of a pane is one flat colour
+is counted for the player on that side. Those runs take the screen and the
+keyboard for their length, disturb the timing, and are reported apart. Pick
+a clip without flat frames for them.
