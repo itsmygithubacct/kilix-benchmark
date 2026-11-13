@@ -70,6 +70,33 @@ class CommandTests(unittest.TestCase):
             video_bench.seek_spec("8:sideways")
 
 
+class RunAttributionTests(unittest.TestCase):
+    def test_only_owned_players_count_including_frames_before_pid_discovery(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            run = video_bench.Run(spec={"phase":"solo", "arms":["neuronte"],
+                                       "left":"neuronte", "warmup":False},
+                                  index=1, out_dir=Path(raw), kitten=None, args=None, clip={})
+            def picture(pid, moment, prefix="neuronte-play-"):
+                return {"e":"shm", "what":"deleted", "file":f"{prefix}{pid}-a-0", "t":moment}
+            try:
+                run.note(picture(420, 1))  # Same player type, even a PID prefix match.
+                run.note(picture(9, 2, "kilix-mpv-"))  # Another test's player.
+                run.note(picture(42, 3))
+                self.assertEqual(run.first_picture, {})
+                run.set_players({"neuronte":42})
+                self.assertEqual(run.first_picture, {"neuronte":3})
+                run.note(picture(420, 4))
+                run.note(picture(9, 5, "kilix-mpv-"))
+                run.note(picture(42, 6))
+                run.events.flush()
+                records = [json.loads(line) for line in (run.dir / "events.jsonl").read_text().splitlines()]
+                self.assertEqual([r["t"] for r in records], [3, 6])
+                self.assertEqual(run.first_picture, {"neuronte":3})
+            finally:
+                run.events.close()
+                run.short.rmdir()
+
+
 class ShmWatchTests(unittest.TestCase):
     def test_times_only_the_players_pictures_and_reads_their_size(self) -> None:
         with tempfile.TemporaryDirectory() as raw:

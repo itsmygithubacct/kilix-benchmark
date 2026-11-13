@@ -453,15 +453,36 @@ class Run:
         self.lock = threading.Lock()
         self.events = open(self.dir / "events.jsonl", "w", encoding="utf-8")
         self.first_picture: dict[str, int] = {}
+        self.shm_prefixes: dict[str, str] | None = None
+        self.pending_shm: list[dict] = []
         self.interrupted = False
 
     def note(self, record: dict):
-        if record["e"] == "shm" and record["what"] == "deleted":
-            for arm, prefix in SHM_PREFIX.items():
-                if arm not in self.first_picture and record["file"].startswith(prefix):
-                    self.first_picture[arm] = record["t"]
         with self.lock:
-            self.events.write(json.dumps(record, separators=(",", ":")) + "\n")
+            if record["e"] == "shm" and self.shm_prefixes is None:
+                # Pictures can arrive before launch returns the player's PID.
+                self.pending_shm.append(record)
+                return
+            self._record(record)
+
+    def _record(self, record: dict):
+        """Called under lock; unrelated players never enter this run's log."""
+        if record["e"] == "shm":
+            arm = next((arm for arm, prefix in (self.shm_prefixes or {}).items()
+                        if record["file"].startswith(prefix)), None)
+            if arm is None:
+                return
+            if record["what"] == "deleted" and arm not in self.first_picture:
+                self.first_picture[arm] = record["t"]
+        self.events.write(json.dumps(record, separators=(",", ":")) + "\n")
+
+    def set_players(self, players: dict[str, int]):
+        with self.lock:
+            self.shm_prefixes = {arm: f"{SHM_PREFIX[arm]}{pid}-"
+                                 for arm, pid in players.items() if arm in self.spec["arms"]}
+            for record in self.pending_shm:
+                self._record(record)
+            self.pending_shm.clear()
 
     def command(self, arm: str) -> list[str]:
         a = self.args
@@ -531,6 +552,7 @@ class Run:
                     geometry[name]["pid"] = player
                     sampler.roots[name] = player
             result["geometry"] = geometry
+            self.set_players(sampler.roots)
             if spec["phase"] == "watch":
                 self.kitten.call("focus-tab", "--match", f"window_id:{first}")
                 watcher = Watcher(self.note, self.dir, {"DISPLAY": a.display})
@@ -599,7 +621,7 @@ class Run:
             self.events.close()
             shutil.rmtree(self.short, ignore_errors=True)
             leftovers = [name for name in os.listdir("/dev/shm")
-                         if name.startswith(tuple(SHM_PREFIX.values())) and name not in stale]
+                         if name.startswith(tuple((self.shm_prefixes or {}).values())) and name not in stale]
             if leftovers:
                 result["notes"].append(f"{len(leftovers)} pictures left in /dev/shm")
         return result
